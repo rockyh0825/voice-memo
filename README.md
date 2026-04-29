@@ -47,8 +47,13 @@ uv sync
 ### 3. APIキーを設定
 
 ```bash
+# まずトークンを生成してコピーしておく
+openssl rand -hex 32
+
 nano .env
-# ANTHROPIC_API_KEY=sk-ant-xxxxx と記載して保存
+# 以下を記載して保存（API_TOKEN は上のコマンドで生成した固定値を貼り付ける）
+# ANTHROPIC_API_KEY=sk-ant-xxxxx
+# API_TOKEN=ここに生成した値を貼り付ける
 
 chmod 600 .env  # 自分のみ読み取り可能にする
 ```
@@ -97,3 +102,21 @@ sudo systemctl restart voice-memo
 | 変数名 | 説明 |
 |---|---|
 | `ANTHROPIC_API_KEY` | Anthropic の API キー（必須） |
+| `API_TOKEN` | APIアクセス用のBearerトークン（必須） |
+
+## APIの認証
+
+すべてのエンドポイント（`/health` を除く）はBearerトークン認証が必要です。
+
+**トークンの生成:**
+```bash
+openssl rand -hex 32
+```
+
+**リクエスト例:**
+```bash
+curl -X POST http://localhost:8000/summarize-text \
+  -H "Authorization: Bearer <YOUR_API_TOKEN>" \
+  -H "Content-Type: application/json" \
+  -d '{"text": "書き起こしテキスト..."}'
+```
