@@ -47,10 +47,13 @@ uv sync
 ### 3. APIキーを設定
 
 ```bash
+# まずトークンを生成してコピーしておく
+openssl rand -hex 32
+
 nano .env
-# 以下を記載して保存
+# 以下を記載して保存（API_TOKEN は上のコマンドで生成した固定値を貼り付ける）
 # ANTHROPIC_API_KEY=sk-ant-xxxxx
-# API_TOKEN=$(openssl rand -hex 32) で生成した値
+# API_TOKEN=ここに生成した値を貼り付ける
 
 chmod 600 .env  # 自分のみ読み取り可能にする
 ```
