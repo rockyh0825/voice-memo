@@ -2,6 +2,7 @@ import json
 import os
 import secrets
 from contextlib import asynccontextmanager
+from datetime import date
 from uuid import UUID
 
 import anthropic
@@ -78,6 +79,7 @@ def extract_tasks(body: ExtractTasksRequest):
             {
                 "role": "user",
                 "content": (
+                    f"今日の日付: {date.today().isoformat()}\n\n"
                     "以下の音声メモの書き起こしからタスクを抽出してください。\n"
                     "JSONの配列形式のみで返してください。説明文は不要です。各要素のフィールド:\n"
                     "- title: string (必須)\n"
