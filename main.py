@@ -63,7 +63,7 @@ class ExtractTasksResponse(BaseModel):
 
 @app.get("/health")
 def health():
-    return {"status": "ok"}
+    return {"status": "ok", "env": os.environ.get("APP_ENV", "production")}
 
 
 @app.post("/extract-tasks", response_model=ExtractTasksResponse, dependencies=[Depends(verify_token)])
