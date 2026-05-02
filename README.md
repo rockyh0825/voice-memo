@@ -5,7 +5,10 @@
 ## エンドポイント
 
 - `GET /health` — 死活確認
+- `GET /tasks?status=draft|todo|done` — タスク一覧取得（要 Bearer 認証）
 - `POST /extract-tasks` — テキストからタスクを抽出して保存（要 Bearer 認証）
+- `PATCH /tasks/{id}` — タスク更新（要 Bearer 認証）
+- `DELETE /tasks/{id}` — タスク削除（要 Bearer 認証）
 
 ```json
 // リクエスト
@@ -42,6 +45,9 @@
 | `SUPABASE_URL` | Supabase プロジェクト URL | Project Settings → API |
 | `SUPABASE_SERVICE_KEY` | Supabase service_role キー | Project Settings → API |
 | `USER_ID` | Supabase Auth のユーザー UUID | Supabase ダッシュボード Authentication → Users |
+| `FRONTEND_ORIGIN` | フロントエンドの URL（CORS 許可）| `https://app.yourdomain.com` |
+
+`FRONTEND_ORIGIN` は任意。未設定時は `localhost:5173` / `localhost:5174` のみ許可。
 
 いずれかが未設定の場合、起動時に `RuntimeError` を投げて終了する。
 
