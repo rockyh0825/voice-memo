@@ -19,6 +19,7 @@ def set_env(monkeypatch):
     monkeypatch.setenv("API_TOKEN", TEST_TOKEN)
     monkeypatch.setenv("SUPABASE_URL", "https://example.supabase.co")
     monkeypatch.setenv("SUPABASE_SERVICE_KEY", "dummy-supabase-key")
+    monkeypatch.setenv("USER_ID", TEST_USER_ID)
 
 
 def auth_headers(token: str = TEST_TOKEN) -> dict:
@@ -48,13 +49,13 @@ class TestHealth:
 
 class TestExtractTasksAuth:
     def test_no_token_returns_401(self):
-        res = client.post("/extract-tasks", json={"text": "hello", "user_id": TEST_USER_ID})
+        res = client.post("/extract-tasks", json={"text": "hello"})
         assert res.status_code == 401
 
     def test_wrong_token_returns_401(self):
         res = client.post(
             "/extract-tasks",
-            json={"text": "hello", "user_id": TEST_USER_ID},
+            json={"text": "hello"},
             headers=auth_headers("wrong-token"),
         )
         assert res.status_code == 401
@@ -96,7 +97,7 @@ class TestExtractTasks:
         ):
             res = client.post(
                 "/extract-tasks",
-                json={"text": "牛乳を買っておいて", "user_id": TEST_USER_ID},
+                json={"text": "牛乳を買っておいて"},
                 headers=auth_headers(),
             )
         assert res.status_code == 200
@@ -109,7 +110,7 @@ class TestExtractTasks:
     def test_empty_text_returns_400(self):
         res = client.post(
             "/extract-tasks",
-            json={"text": "   ", "user_id": TEST_USER_ID},
+            json={"text": "   "},
             headers=auth_headers(),
         )
         assert res.status_code == 400
@@ -119,7 +120,7 @@ class TestExtractTasks:
         monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
         res = client.post(
             "/extract-tasks",
-            json={"text": "テスト", "user_id": TEST_USER_ID},
+            json={"text": "テスト"},
             headers=auth_headers(),
         )
         assert res.status_code == 500
@@ -134,7 +135,7 @@ class TestExtractTasks:
         with patch("main.anthropic.Anthropic", return_value=mock_client):
             res = client.post(
                 "/extract-tasks",
-                json={"text": "今日はいい天気ですね", "user_id": TEST_USER_ID},
+                json={"text": "今日はいい天気ですね"},
                 headers=auth_headers(),
             )
         assert res.status_code == 200
@@ -149,7 +150,7 @@ class TestExtractTasks:
         with patch("main.anthropic.Anthropic", return_value=mock_client):
             res = client.post(
                 "/extract-tasks",
-                json={"text": "テスト", "user_id": TEST_USER_ID},
+                json={"text": "テスト"},
                 headers=auth_headers(),
             )
         assert res.status_code == 500

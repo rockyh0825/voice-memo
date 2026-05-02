@@ -45,14 +45,9 @@ components:
         text:
           type: string
           title: Text
-        user_id:
-          type: string
-          format: uuid
-          title: User Id
       type: object
       required:
       - text
-      - user_id
       title: ExtractTasksRequest
     ExtractTasksResponse:
       properties:

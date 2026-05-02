@@ -13,7 +13,7 @@ from supabase import create_client
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    missing = [v for v in ("API_TOKEN", "SUPABASE_URL", "SUPABASE_SERVICE_KEY") if not os.environ.get(v)]
+    missing = [v for v in ("API_TOKEN", "SUPABASE_URL", "SUPABASE_SERVICE_KEY", "USER_ID") if not os.environ.get(v)]
     if missing:
         raise RuntimeError(f"Required environment variables not set: {', '.join(missing)}")
     yield
@@ -44,7 +44,6 @@ def get_supabase_client():
 
 class ExtractTasksRequest(BaseModel):
     text: str
-    user_id: UUID
 
 
 class TaskOut(BaseModel):
@@ -107,7 +106,7 @@ def extract_tasks(body: ExtractTasksRequest):
     supabase = get_supabase_client()
     result = supabase.table("tasks").insert([
         {
-            "user_id": str(body.user_id),
+            "user_id": os.environ["USER_ID"],
             "title": t["title"],
             "body": t.get("body"),
             "priority": t.get("priority", 3),
