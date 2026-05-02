@@ -1,19 +1,36 @@
 # Voice Memo API
 
-音声メモの書き起こしテキストを Claude で要約する FastAPI サーバー。
+音声メモの書き起こしテキストから Claude でタスクを抽出し、Supabase に保存する FastAPI サーバー。
 
 ## エンドポイント
 
 - `GET /health` — 死活確認
-- `POST /summarize-text` — テキストを要約
+- `POST /extract-tasks` — テキストからタスクを抽出して保存
 
 ```json
 // リクエスト
-{ "text": "書き起こしテキスト..." }
+{
+  "text": "明日までに企画書を提出して、牛乳も買っておく",
+  "user_id": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+}
 
 // レスポンス
-{ "summary": "要約結果..." }
+{
+  "tasks": [
+    {
+      "id": "...",
+      "title": "企画書を提出する",
+      "body": null,
+      "priority": 1,
+      "due_date": null,
+      "status": "draft",
+      "source": "voice"
+    }
+  ]
+}
 ```
+
+抽出されたタスクは `status=draft` で保存される。React PWA 側でユーザーが確認・編集して `todo` に変更する運用。
 
 ## ローカル起動
 
@@ -21,11 +38,11 @@
 # 依存関係インストール
 uv sync
 
-# .env を作成
-echo "ANTHROPIC_API_KEY=sk-ant-xxxxx" > .env
+# .env を作成（下記「環境変数」を参照）
+nano .env
 
 # 起動
-source .env && uv run uvicorn main:app --reload
+set -a && source .env && set +a && uv run uvicorn main:app --reload
 ```
 
 ## Ubuntu サーバーへのデプロイ
@@ -39,23 +56,16 @@ curl -LsSf https://astral.sh/uv/install.sh | sh
 ### 2. リポジトリを clone
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/voice-memo.git
+git clone https://github.com/rockyh0825/voice-memo.git
 cd voice-memo
 uv sync
 ```
 
-### 3. APIキーを設定
+### 3. 環境変数を設定
 
 ```bash
-# まずトークンを生成してコピーしておく
-openssl rand -hex 32
-
 nano .env
-# 以下を記載して保存（API_TOKEN は上のコマンドで生成した固定値を貼り付ける）
-# ANTHROPIC_API_KEY=sk-ant-xxxxx
-# API_TOKEN=ここに生成した値を貼り付ける
-
-chmod 600 .env  # 自分のみ読み取り可能にする
+chmod 600 .env
 ```
 
 ### 4. systemd サービスとして登録
@@ -102,21 +112,31 @@ sudo systemctl restart voice-memo
 | 変数名 | 説明 |
 |---|---|
 | `ANTHROPIC_API_KEY` | Anthropic の API キー（必須） |
-| `API_TOKEN` | APIアクセス用のBearerトークン（必須） |
+| `API_TOKEN` | API アクセス用の Bearer トークン（`openssl rand -hex 32` で生成） |
+| `SUPABASE_URL` | Supabase プロジェクトの URL |
+| `SUPABASE_SERVICE_KEY` | Supabase の service_role キー（Project Settings → API） |
 
-## APIの認証
+いずれかが未設定の場合、起動時に `RuntimeError` を投げて終了する。
 
-すべてのエンドポイント（`/health` を除く）はBearerトークン認証が必要です。
+## API 認証
 
-**トークンの生成:**
+`/health` を除くすべてのエンドポイントに Bearer トークンが必要。
+
 ```bash
-openssl rand -hex 32
+curl -X POST http://localhost:8000/extract-tasks \
+  -H "Authorization: Bearer <API_TOKEN>" \
+  -H "Content-Type: application/json" \
+  -d '{"text": "...", "user_id": "..."}'
 ```
 
-**リクエスト例:**
+## スキーマ管理
+
+Supabase のマイグレーションは `supabase/migrations/` で管理。
+
 ```bash
-curl -X POST http://localhost:8000/summarize-text \
-  -H "Authorization: Bearer <YOUR_API_TOKEN>" \
-  -H "Content-Type: application/json" \
-  -d '{"text": "書き起こしテキスト..."}'
+# 変更を適用
+supabase db push
+
+# TypeScript 型を再生成（フロント用）
+supabase gen types typescript --project-id hqmclmorcegnffrgbltz > supabase/types.ts
 ```
