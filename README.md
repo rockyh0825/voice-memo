@@ -61,8 +61,10 @@ source $HOME/.local/bin/env  # または新しいシェルを開く
 ```bash
 git clone https://github.com/rockyh0825/voice-memo.git
 cd voice-memo
-uv sync
+uv sync  # .venv を作成・依存関係をインストール
 ```
+
+> **注意:** `.venv` を別プロジェクトからコピーしないこと。shebang が壊れて起動しない。必ず `uv sync` で作成する。
 
 ### 3. 環境変数を設定
 
@@ -84,7 +86,7 @@ After=network.target
 User=YOUR_USERNAME
 WorkingDirectory=/home/YOUR_USERNAME/voice-memo
 EnvironmentFile=/home/YOUR_USERNAME/voice-memo/.env
-ExecStart=/home/YOUR_USERNAME/.local/bin/uv run uvicorn main:app --host 0.0.0.0 --port 8000
+ExecStart=/home/YOUR_USERNAME/voice-memo/.venv/bin/uvicorn main:app --host 127.0.0.1 --port 8000
 Restart=always
 
 [Install]
