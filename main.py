@@ -3,10 +3,12 @@ import os
 import secrets
 from contextlib import asynccontextmanager
 from datetime import date
+from typing import Literal
 from uuid import UUID
 
 import anthropic
-from fastapi import Depends, FastAPI, HTTPException, Security
+from fastapi import Depends, FastAPI, HTTPException, Query, Security
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from pydantic import BaseModel
 from supabase import create_client
@@ -22,6 +24,17 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="Voice Memo API", lifespan=lifespan)
 security = HTTPBearer(auto_error=False)
+
+# CORS: localhost は常に許可、本番フロントのオリジンは FRONTEND_ORIGIN で追加
+_cors_origins = ["http://localhost:5173", "http://localhost:5174"]
+if _frontend_origin := os.environ.get("FRONTEND_ORIGIN"):
+    _cors_origins.extend(o.strip() for o in _frontend_origin.split(",") if o.strip())
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=_cors_origins,
+    allow_methods=["GET", "POST", "PATCH", "DELETE"],
+    allow_headers=["Authorization", "Content-Type"],
+)
 
 
 def verify_token(credentials: HTTPAuthorizationCredentials | None = Security(security)) -> None:
@@ -43,6 +56,8 @@ def get_supabase_client():
     return create_client(os.environ["SUPABASE_URL"], os.environ["SUPABASE_SERVICE_KEY"])
 
 
+# ---------- Models ----------
+
 class ExtractTasksRequest(BaseModel):
     text: str
 
@@ -61,9 +76,66 @@ class ExtractTasksResponse(BaseModel):
     tasks: list[TaskOut]
 
 
+class TaskUpdateRequest(BaseModel):
+    title: str | None = None
+    body: str | None = None
+    priority: int | None = None
+    due_date: str | None = None
+    status: Literal["draft", "todo", "done"] | None = None
+
+
+# ---------- Endpoints ----------
+
 @app.get("/health")
 def health():
     return {"status": "ok", "env": os.environ.get("APP_ENV", "production")}
+
+
+@app.get("/tasks", response_model=list[TaskOut], dependencies=[Depends(verify_token)])
+def list_tasks(status: Literal["draft", "todo", "done"] | None = Query(default=None)):
+    supabase = get_supabase_client()
+    query = (
+        supabase.table("tasks")
+        .select("*")
+        .eq("user_id", os.environ["USER_ID"])
+    )
+    if status:
+        query = query.eq("status", status)
+    result = query.order("priority").order("created_at").execute()
+    return [TaskOut(**r) for r in result.data]
+
+
+@app.patch("/tasks/{task_id}", response_model=TaskOut, dependencies=[Depends(verify_token)])
+def update_task(task_id: UUID, body: TaskUpdateRequest):
+    updates = {k: v for k, v in body.model_dump().items() if k in body.model_fields_set}
+    if not updates:
+        raise HTTPException(status_code=400, detail="No fields to update")
+
+    supabase = get_supabase_client()
+    result = (
+        supabase.table("tasks")
+        .update(updates)
+        .eq("id", str(task_id))
+        .eq("user_id", os.environ["USER_ID"])
+        .execute()
+    )
+    if not result.data:
+        raise HTTPException(status_code=404, detail="Task not found")
+    return TaskOut(**result.data[0])
+
+
+@app.delete("/tasks/{task_id}", status_code=204, dependencies=[Depends(verify_token)])
+def delete_task(task_id: UUID):
+    supabase = get_supabase_client()
+    result = (
+        supabase.table("tasks")
+        .delete()
+        .eq("id", str(task_id))
+        .eq("user_id", os.environ["USER_ID"])
+        .execute()
+    )
+    if not result.data:
+        raise HTTPException(status_code=404, detail="Task not found")
 
 
 @app.post("/extract-tasks", response_model=ExtractTasksResponse, dependencies=[Depends(verify_token)])
