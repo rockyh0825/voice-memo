@@ -1,0 +1,144 @@
+openapi: 3.1.0
+info:
+  title: Voice Memo API
+  version: 0.1.0
+paths:
+  /health:
+    get:
+      summary: Health
+      operationId: health_health_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+  /extract-tasks:
+    post:
+      summary: Extract Tasks
+      operationId: extract_tasks_extract_tasks_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExtractTasksRequest'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExtractTasksResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security:
+      - HTTPBearer: []
+components:
+  schemas:
+    ExtractTasksRequest:
+      properties:
+        text:
+          type: string
+          title: Text
+        user_id:
+          type: string
+          format: uuid
+          title: User Id
+      type: object
+      required:
+      - text
+      - user_id
+      title: ExtractTasksRequest
+    ExtractTasksResponse:
+      properties:
+        tasks:
+          items:
+            $ref: '#/components/schemas/TaskOut'
+          type: array
+          title: Tasks
+      type: object
+      required:
+      - tasks
+      title: ExtractTasksResponse
+    HTTPValidationError:
+      properties:
+        detail:
+          items:
+            $ref: '#/components/schemas/ValidationError'
+          type: array
+          title: Detail
+      type: object
+      title: HTTPValidationError
+    TaskOut:
+      properties:
+        id:
+          type: string
+          format: uuid
+          title: Id
+        title:
+          type: string
+          title: Title
+        body:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Body
+        priority:
+          type: integer
+          title: Priority
+        due_date:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Due Date
+        status:
+          type: string
+          title: Status
+        source:
+          type: string
+          title: Source
+      type: object
+      required:
+      - id
+      - title
+      - body
+      - priority
+      - due_date
+      - status
+      - source
+      title: TaskOut
+    ValidationError:
+      properties:
+        loc:
+          items:
+            anyOf:
+            - type: string
+            - type: integer
+          type: array
+          title: Location
+        msg:
+          type: string
+          title: Message
+        type:
+          type: string
+          title: Error Type
+        input:
+          title: Input
+        ctx:
+          type: object
+          title: Context
+      type: object
+      required:
+      - loc
+      - msg
+      - type
+      title: ValidationError
+  securitySchemes:
+    HTTPBearer:
+      type: http
+      scheme: bearer
