@@ -101,6 +101,9 @@ def extract_tasks(body: ExtractTasksRequest):
     except (json.JSONDecodeError, IndexError):
         raise HTTPException(status_code=500, detail="Failed to parse tasks from AI response")
 
+    if not tasks_data:
+        return ExtractTasksResponse(tasks=[])
+
     supabase = get_supabase_client()
     result = supabase.table("tasks").insert([
         {

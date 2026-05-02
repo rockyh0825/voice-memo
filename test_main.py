@@ -125,6 +125,21 @@ class TestExtractTasks:
         assert res.status_code == 500
         assert res.json()["detail"] == "ANTHROPIC_API_KEY is not set"
 
+    def test_no_tasks_extracted_returns_empty(self, monkeypatch):
+        mock_client = MagicMock()
+        mock_client.messages.create.return_value = MagicMock(
+            content=[MagicMock(text="[]")]
+        )
+        monkeypatch.setenv("ANTHROPIC_API_KEY", "dummy-key")
+        with patch("main.anthropic.Anthropic", return_value=mock_client):
+            res = client.post(
+                "/extract-tasks",
+                json={"text": "今日はいい天気ですね", "user_id": TEST_USER_ID},
+                headers=auth_headers(),
+            )
+        assert res.status_code == 200
+        assert res.json() == {"tasks": []}
+
     def test_invalid_ai_response_returns_500(self, monkeypatch):
         mock_client = MagicMock()
         mock_client.messages.create.return_value = MagicMock(
