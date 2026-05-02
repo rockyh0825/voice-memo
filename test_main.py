@@ -20,6 +20,7 @@ def set_env(monkeypatch):
     monkeypatch.setenv("SUPABASE_URL", "https://example.supabase.co")
     monkeypatch.setenv("SUPABASE_SERVICE_KEY", "dummy-supabase-key")
     monkeypatch.setenv("USER_ID", TEST_USER_ID)
+    monkeypatch.setenv("APP_ENV", "development")
 
 
 def auth_headers(token: str = TEST_TOKEN) -> dict:
@@ -40,7 +41,7 @@ class TestHealth:
     def test_returns_200_without_token(self):
         res = client.get("/health")
         assert res.status_code == 200
-        assert res.json() == {"status": "ok"}
+        assert res.json() == {"status": "ok", "env": "development"}
 
     def test_returns_200_with_token(self):
         res = client.get("/health", headers=auth_headers())
