@@ -76,6 +76,14 @@ class ExtractTasksResponse(BaseModel):
     tasks: list[TaskOut]
 
 
+class TaskCreate(BaseModel):
+    title: str
+    body: str | None = None
+    priority: int = 2
+    due_date: str | None = None
+    status: Literal["draft", "todo", "done"] = "todo"
+
+
 class TaskUpdateRequest(BaseModel):
     title: str | None = None
     body: str | None = None
@@ -103,6 +111,21 @@ def list_tasks(status: Literal["draft", "todo", "done"] | None = Query(default=N
         query = query.eq("status", status)
     result = query.order("priority").order("created_at").execute()
     return [TaskOut(**r) for r in result.data]
+
+
+@app.post("/tasks", response_model=TaskOut, status_code=201, dependencies=[Depends(verify_token)])
+def create_task(body: TaskCreate):
+    supabase = get_supabase_client()
+    result = supabase.table("tasks").insert({
+        "user_id": os.environ["USER_ID"],
+        "title": body.title,
+        "body": body.body,
+        "priority": body.priority,
+        "due_date": body.due_date,
+        "status": body.status,
+        "source": "manual",
+    }).execute()
+    return TaskOut(**result.data[0])
 
 
 @app.patch("/tasks/{task_id}", response_model=TaskOut, dependencies=[Depends(verify_token)])

@@ -13,6 +13,31 @@ paths:
           content:
             application/json:
               schema: {}
+  /tasks:
+    post:
+      summary: Create Task
+      operationId: create_task_tasks_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TaskCreate'
+        required: true
+      responses:
+        '201':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TaskOut'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security:
+      - HTTPBearer: []
   /extract-tasks:
     post:
       summary: Extract Tasks
@@ -40,6 +65,35 @@ paths:
       - HTTPBearer: []
 components:
   schemas:
+    TaskCreate:
+      properties:
+        title:
+          type: string
+          title: Title
+        body:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Body
+          default: null
+        priority:
+          type: integer
+          title: Priority
+          default: 2
+        due_date:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Due Date
+          default: null
+        status:
+          type: string
+          title: Status
+          default: todo
+      type: object
+      required:
+      - title
+      title: TaskCreate
     ExtractTasksRequest:
       properties:
         text:
